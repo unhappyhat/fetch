@@ -1,0 +1,62 @@
+#!/bin/bash
+
+# unhappyhat@github.com wrote this file — do whatever you want with it.
+
+# Color setup
+bold=$(tput bold)
+reset=$(tput sgr0)
+white=$(tput setaf 7)
+gray=$(tput setaf 8)
+
+# ASCII Art
+art0="${gray}         "
+art1="${gray}|\"\"|\"\"|\\/"
+art2="${gray}|__|| '_\\"
+art3="${gray}    |    "
+
+# Data functions
+host_kernel() {
+    echo "${bold}${white}$(hostname)${reset} ${gray}| ${white}$(uname -r)"
+}
+
+cpu_info() {
+    local cpu_raw=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | sed -e 's/^ *//')
+    local cpu_model=$(sed -E 's/.*(i[3579]-[0-9A-Z]+[A-Z]?|Ryzen [0-9]+ [0-9]+X?).*/\1/' <<< "$cpu_raw")
+    [ -z "$cpu_model" ] && cpu_model=$(awk '{sub(/^[ \t]+/, ""); print}' <<< "$cpu_raw")
+
+    local cores=$(grep -c "^processor" /proc/cpuinfo)
+    local freq=$(awk -F: '/cpu MHz/ {sum += $2; count++} END {printf "%.0f MHz", sum/count}' /proc/cpuinfo)
+
+    echo "${white}${cpu_model} ${gray}| ${white}${cores}x${freq}"
+}
+
+ram_info() {
+    local mem_total=$(awk '/MemTotal/ {printf "%.1f", $2/1048576}' /proc/meminfo)
+    local mem_used=$(awk -v total="$mem_total" '/MemAvailable/ {printf "%.1f", total - ($2/1048576)}' /proc/meminfo)
+
+    echo "${white}${mem_used}GiB${gray}/${white}${mem_total}GiB RAM"
+}
+
+pkg_count() {
+    local count="N/A"
+
+    # Simplified package detection
+    if command -v pacman &>/dev/null; then    count=$(pacman -Qq | wc -l)
+    elif command -v dpkg &>/dev/null; then    count=$(dpkg -l | grep -c '^ii')
+    else count="N/A"
+    fi
+
+    echo "${white}${count}${gray} packages"
+}
+
+# Generate lines
+line0=$(host_kernel)
+line1=$(cpu_info)
+line2=$(ram_info)
+line3=$(pkg_count)
+
+# Display output
+echo "${art0} ${line0}${reset}"
+echo "${art1} ${line1}${reset}"
+echo "${art2} ${line2}${reset}"
+echo "${art3} ${line3}${reset}"
