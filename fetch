@@ -43,6 +43,7 @@ pkg_count() {
     # Simplified package detection
     if command -v pacman &>/dev/null; then    count=$(pacman -Qq | wc -l)
     elif command -v dpkg &>/dev/null; then    count=$(dpkg -l | grep -c '^ii')
+    elif command -v yum &>/dev/null;  then    count=$(yum list --installed -q | wc -l)
     else count="N/A"
     fi
 
